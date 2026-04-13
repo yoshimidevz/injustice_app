@@ -14,11 +14,54 @@ final class CharacterSharedPreferencesService
   static const String _storageKey = 'characters';
 
   @override
-  Future<CharacterResult> deleteCharacter(String id) {
-    // TODO: implement deleteCharacter
-    throw UnimplementedError();
+  Future<CharacterResult> deleteCharacter(String id) async{ //classe do tipo Future, que irá retornar algo no futuro, e pode demorar pra acontecer.
+    try{
+      final currentResult = await getAllCharacters();
+      return await currentResult.fold( //trata sucesso e falha depois de obter os personagens atuais
+        onSuccess: (characters) async{
+          final found = characters
+              .where((c) => c.id == id)
+              .toList();
+          if(found.isEmpty){
+            return Error(ApiLocalFailure('Personagem não encontrado, impossivel deletar'));
+          }
+          final updatedCharacters = characters
+              .where((c) => c.id != id) //atualiza a lista, mantendo todos menos o removido
+              .toList();
+          await _saveCharacters(updatedCharacters);
+          return Success(found.first); //retorna o personagem deletado
+        },
+        onFailure: (f) async => Error(f), //se falhar ao obter os personagens, retorna o erro
+      );
+    } catch(e){
+      return Error(ApiLocalFailure('Erro ao deletar: $e'));
+    }
   }
 
+  @override
+  Future<CharacterResult> updateCharacter(Character character) async {
+    try {
+      final currentResult = await getAllCharacters();
+      return await currentResult.fold(
+        onSuccess: (characters) async {
+          final index = characters
+            .indexWhere((c) => c.id == character.id);
+          if (index == -1) {
+            return Error(ApiLocalFailure('Personagem não encontrado para atualização'));
+          }
+          final updatedCharacters = List<Character>.from(characters);
+          updatedCharacters[index] = character;
+          await _saveCharacters(updatedCharacters);
+          return Success(character);
+        },
+        onFailure: (f) async => Error(f),
+      );
+    } catch (e) {
+      return Error(ApiLocalFailure('Erro ao atualizar personagem: $e'));
+    }
+  }
+
+  
   @override
   Future<ListCharacterResult> getAllCharacters() async {
     try {
@@ -45,8 +88,23 @@ final class CharacterSharedPreferencesService
 
   @override
   Future<CharacterResult> getCharacterById(String id) {
-    // TODO: implement getCharacterById
-    throw UnimplementedError();
+    try{
+      return getAllCharacters().then((result) => result.fold(
+        onSuccess: (characters){
+          final found = characters
+              .where((c) => c.id == id)
+              .toList();
+          if(found.isEmpty){
+            return Error(ApiLocalFailure('Personagem não encontrado'));
+          }
+          return Success(found.first);
+        },
+        onFailure: (f) => Error(f),
+      ));
+    }
+    catch(e){
+      return Future.value(Error(ApiLocalFailure('Erro ao obter personagem por id: $e')));
+    }
   }
 
   @override
