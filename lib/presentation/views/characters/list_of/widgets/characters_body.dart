@@ -9,6 +9,7 @@ import '../../../../widgets/account_summary_card.dart';
 import '../../../../widgets/empty_state.dart';
 import '../../../../widgets/loading_indicator.dart';
 import '../../../../widgets/star_rating.dart';
+import '../../form/form_character_view.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 class CharactersBody extends StatelessWidget {
@@ -30,10 +31,11 @@ class CharactersBody extends StatelessWidget {
       final characters = viewModel.charactersState.sortedCharacters.value;
 
       return RefreshIndicator(
-        onRefresh: () async {},
+        onRefresh: () async {
+          await viewModel.commands.getAllCharactersCommand.execute();
+        },
         child: CustomScrollView(
           slivers: [
-            /// Header
             SliverToBoxAdapter(
               child: Padding(
                 padding: AppSpacing.paddingMd,
@@ -41,12 +43,10 @@ class CharactersBody extends StatelessWidget {
               ),
             ),
 
-            /// Filtros
             SliverToBoxAdapter(child: FilterPanel(viewModel: viewModel)),
 
-            /// Conteúdo (loading | empty | lista)
             if (isLoading)
-              SliverFillRemaining(
+              const SliverFillRemaining(
                 hasScrollBody: false,
                 child: LoadingIndicator(message: 'Carregando personagens...'),
               )
@@ -63,8 +63,23 @@ class CharactersBody extends StatelessWidget {
                     final character = characters[index];
                     return CharacterListItem(
                       character: character,
-                      onDelete: () {},
-                      onTap: () {},
+                      onDelete: () async {
+                        await viewModel.commands.deleteCharacter(character.id);
+                      },
+                      onTap: () async {
+                        final edited = await Navigator.push<Character?>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => FormCharacterView(
+                              character: character,
+                            ),
+                          ),
+                        );
+                        
+                        if (edited != null) {
+                          await viewModel.commands.updateCharacter(edited);
+                        }
+                      },
                     );
                   }, childCount: characters.length),
                 ),
@@ -76,52 +91,11 @@ class CharactersBody extends StatelessWidget {
   }
 }
 
-// class EmptyState extends StatelessWidget {
-//   const EmptyState({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Center(
-//       child: Padding(
-//         padding: const EdgeInsets.symmetric(
-//           horizontal: AppSpacing.xxl,
-//           vertical: AppSpacing.xxl,
-//         ),
-//         child: Column(
-//           // mainAxisSize: MainAxisSize.max,
-//           // mainAxisAlignment: MainAxisAlignment.start,
-//           children: [
-//             Icon(
-//               Icons.people_outline,
-//               size: 72,
-//               color: Theme.of(context).colorScheme.outline,
-//             ),
-//             const SizedBox(height: AppSpacing.md),
-//             Text(
-//               'Nenhum personagem encontrado',
-//               textAlign: TextAlign.center,
-//               style: context.textStyles.titleMedium?.semiBold,
-//             ),
-//             const SizedBox(height: AppSpacing.sm),
-//             Text(
-//               'Adicione seu primeiro personagem usando o botão +',
-//               textAlign: TextAlign.center,
-//               style: context.textStyles.bodyMedium?.withColor(
-//                 Theme.of(context).colorScheme.onSurfaceVariant,
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
 /// Item da lista de personagens
 class CharacterListItem extends StatelessWidget {
   final Character character;
-  final VoidCallback onDelete;
-  final VoidCallback onTap;
+  final Future<void> Function() onDelete;
+  final Future<void> Function() onTap;
 
   const CharacterListItem({
     super.key,
@@ -156,7 +130,7 @@ class CharacterListItem extends StatelessWidget {
       ),
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
-          onTap();
+          await onTap();
           return false;
         } else {
           return await showDialog<bool>(
@@ -188,13 +162,12 @@ class CharacterListItem extends StatelessWidget {
         color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.9),
         margin: const EdgeInsets.only(bottom: AppSpacing.md),
         child: InkWell(
-          onTap: onTap,
+          onTap: () => onTap(),
           borderRadius: BorderRadius.circular(AppRadius.md),
           child: Padding(
             padding: AppSpacing.paddingMd,
             child: Row(
               children: [
-                // Indicador de raridade
                 Container(
                   width: 4,
                   height: 60,
@@ -204,7 +177,6 @@ class CharacterListItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
-                // Conteúdo principal
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,7 +232,6 @@ class CharacterListItem extends StatelessWidget {
 
 class FilterPanel extends StatelessWidget {
   final CharactersViewModel viewModel;
-
   const FilterPanel({super.key, required this.viewModel});
 
   CharactersStateViewmodel get state => viewModel.charactersState;
@@ -272,7 +243,7 @@ class FilterPanel extends StatelessWidget {
       final isExpanded = state.isFilterPanelExpanded.value;
 
       return Container(
-        margin: EdgeInsets.only(
+        margin: const EdgeInsets.only(
           left: AppSpacing.md,
           right: AppSpacing.md,
           bottom: AppSpacing.md,
@@ -288,7 +259,6 @@ class FilterPanel extends StatelessWidget {
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(AppRadius.md),
-          color: Theme.of(context).colorScheme.secondary,
           border: Border(
             bottom: BorderSide(
               color: Theme.of(context).colorScheme.outlineVariant,
@@ -298,7 +268,6 @@ class FilterPanel extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // Cabeçalho do painel
             InkWell(
               onTap: state.toggleFilterPanel,
               child: Padding(
@@ -316,50 +285,27 @@ class FilterPanel extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     if (filtersCount > 0) ...[
                       const SizedBox(width: 6),
-
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
+                          horizontal: 6,
+                          vertical: 2,
                         ),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.primary,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
-                          '$filtersCount',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
+                          filtersCount.toString(),
+                          style: context.textStyles.labelSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onPrimary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ],
-
                     const Spacer(),
-
-                    if (filtersCount > 0)
-                      TextButton.icon(
-                        onPressed: state.clearFilters,
-                        icon: const Icon(Icons.clear, size: 16),
-                        label: const Text('Limpar'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.onSecondary,
-                          textStyle: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.sm,
-                          ),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      ),
                     Icon(
                       isExpanded ? Icons.expand_less : Icons.expand_more,
                       color: Theme.of(context).colorScheme.onSecondary,
@@ -368,192 +314,26 @@ class FilterPanel extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Conteúdo do painel (expansível)
-            if (isExpanded)
-              // if (_isExpanded)
-              SizedBox(
-                width: double.infinity,
-                child: _FiltersContent(state: state),
-              ),
-          ],
-        ),
-      );
-    });
-  }
-}
-
-class _FiltersContent extends StatelessWidget {
-  const _FiltersContent({required this.state});
-
-  final CharactersStateViewmodel state;
-
-  @override
-  Widget build(BuildContext context) {
-    return Watch((context) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          0,
-          AppSpacing.md,
-          AppSpacing.md,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// 🔹 RARIDADE
-            _FilterSection(
-              title: 'Raridade',
-              sectionKey: 'rarity',
-              state: state,
-              child: Wrap(
-                spacing: AppSpacing.xs,
-                runSpacing: AppSpacing.xs,
-                children: CharacterRarity.values.map((rarity) {
-                  final isSelected = state.selectedRarities.value.contains(
-                    rarity,
-                  );
-
-                  return FilterChip(
-                    label: Text(
-                      rarity.displayName,
-                      style: TextStyle(color: rarity.color),
+            if (isExpanded) ...[
+              const Divider(height: 1),
+              Padding(
+                padding: AppSpacing.paddingMd,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Classe',
+                      style: context.textStyles.labelMedium?.semiBold,
                     ),
-                    selected: isSelected,
-                    onSelected: (_) => state.toggleRarity(rarity),
-                  );
-                }).toList(),
-              ),
-            ),
-
-            /// 🔹 CLASSE
-            _FilterSection(
-              title: 'Classe',
-              sectionKey: 'class',
-              state: state,
-              child: Wrap(
-                spacing: AppSpacing.xs,
-                runSpacing: AppSpacing.xs,
-                children: CharacterClass.values.map((characterClass) {
-                  final isSelected = state.selectedClasses.value.contains(
-                    characterClass,
-                  );
-
-                  return FilterChip(
-                    label: Text(
-                      characterClass.displayName,
-                      style: TextStyle(color: characterClass.color),
-                    ),
-                    selected: isSelected,
-                    onSelected: (_) => state.toggleClass(characterClass),
-                  );
-                }).toList(),
-              ),
-            ),
-
-            /// 🔹 LEVEL
-            _FilterSection(
-              title: 'Level',
-              sectionKey: 'level',
-              state: state,
-              child: Wrap(
-                spacing: AppSpacing.xs,
-                runSpacing: AppSpacing.xs,
-                children: LevelFilter.values.map((filter) {
-                  return FilterChip(
-                    label: Text(filter.label),
-                    selected: state.levelFilter.value == filter,
-                    onSelected: (_) => state.setLevelFilter(filter),
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
-        ),
-      );
-    });
-  }
-}
-
-class _FilterSection extends StatelessWidget {
-  final String title;
-  final String sectionKey;
-  final CharactersStateViewmodel state;
-  final Widget child;
-
-  const _FilterSection({
-    required this.title,
-    required this.sectionKey,
-    required this.state,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Watch((context) {
-      final isExpanded = state.isSectionExpanded(sectionKey);
-      final selectedCount = switch (sectionKey) {
-        'rarity' => state.selectedRarities.value.length,
-        'class' => state.selectedClasses.value.length,
-        'alignment' => state.selectedAlignments.value.length,
-        _ => 0,
-      };
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            onTap: () => state.toggleSection(sectionKey),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-              child: Row(
-                children: [
-                  Text(title),
-                  if (selectedCount > 0) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '$selectedCount',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    // Aqui viriam os chips de filtro por classe
+                    // ...
                   ],
-                  const Spacer(),
-                  Icon(
-                    isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: Theme.of(context).colorScheme.onSecondary,
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
-
-          AnimatedCrossFade(
-            firstChild: const SizedBox.shrink(),
-            secondChild: Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.xs),
-              child: child,
-            ),
-            crossFadeState: isExpanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 200),
-          ),
-
-          const SizedBox(height: AppSpacing.md),
-        ],
+            ],
+          ],
+        ),
       );
     });
   }
