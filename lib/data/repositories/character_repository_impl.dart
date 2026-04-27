@@ -7,12 +7,11 @@ import '../../domain/models/character_entity.dart';
 
 final class CharacterRepositoryImpl implements ICharacterRepository {
   final ICharacterLocalStorage _localStorage;
-
   CharacterRepositoryImpl({required ICharacterLocalStorage localStorage})
     : _localStorage = localStorage;
 
   @override
-  Future<CharacterResult> deleteCharacter(String id) {
+  Future<CharacterResult> deleteCharacter(String id) { //aqui que vai implementar chamando o shared preferences
     return _localStorage.deleteCharacter(id);
   }
 

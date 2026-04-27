@@ -39,18 +39,18 @@ final class CharacterSharedPreferencesService
   }
 
   @override
-  Future<CharacterResult> updateCharacter(Character character) async {
+  Future<CharacterResult> updateCharacter(Character character) async { //adicionei essa função tb
     try {
       final currentResult = await getAllCharacters();
       return await currentResult.fold(
         onSuccess: (characters) async {
-          final index = characters
-            .indexWhere((c) => c.id == character.id);
+          final index = characters //recebo uma lista de personagens e procuro o personagem a ser atualizado, para isso uso o indexWhere
+            .indexWhere((c) => c.id == character.id); //vai procurar o personagem na lista e retornar a posição, se não encontrar retorna -1
           if (index == -1) {
             return Error(ApiLocalFailure('Personagem não encontrado para atualização'));
           }
-          final updatedCharacters = List<Character>.from(characters);
-          updatedCharacters[index] = character;
+          final updatedCharacters = List<Character>.from(characters); //se achar o personagem, cria uma nova lista a partir da antiga
+          updatedCharacters[index] = character; //atualiza o personagem na posição encontrada
           await _saveCharacters(updatedCharacters);
           return Success(character);
         },

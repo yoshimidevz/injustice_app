@@ -4,6 +4,6 @@ abstract interface class ICharacterFacadeUseCases {
   Future<ListCharacterResult> getAllCharacters(NoParams params);
   Future<CharacterResult> getCharacterById(CharacterIdParams params);
   Future<CharacterResult> saveCharacter(CharacterParams params);
-  Future<CharacterResult> deleteCharacter(CharacterIdParams params);
+  Future<CharacterResult> deleteCharacter(CharacterIdParams params); //essa aqui é um design pattern pra não expor o usecase diretamente
   Future<CharacterResult> updateCharacter(CharacterParams params);
 }

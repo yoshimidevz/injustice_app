@@ -9,8 +9,8 @@ class CharactersCommandsViewModel {
   final CharactersStateViewmodel state;
   final GetAllCharactersCommand _getAccountCommand;
   final CreateCharacterCommand _createCharacterCommand;
-  final DeleteCharacterCommand _deleteCharacterCommand;
-  final UpdateCharacterCommand _updateCharacterCommand;
+  final DeleteCharacterCommand _deleteCharacterCommand; //command para deletar personagem
+  final UpdateCharacterCommand _updateCharacterCommand; //command para atualizar personagem
 
   CharactersCommandsViewModel({
     required this.state,

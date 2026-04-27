@@ -6,5 +6,5 @@ abstract interface class ICharacterLocalStorage {
   Future<ListCharacterResult> getAllCharacters();
   Future<CharacterResult> getCharacterById(String id);
   Future<CharacterResult> deleteCharacter(String id);
-  Future<CharacterResult> updateCharacter(Character character);
+  Future<CharacterResult> updateCharacter(Character character); //aqui adicionei a função de update tb
 }

@@ -9,8 +9,8 @@ final class CharacterFacadeUseCasesImpl implements ICharacterFacadeUseCases {
   final IGetAllCharactersUseCase _getAllCharactersUseCase;
   final IGetCharacterByIdUseCase _getCharacterByIdUseCase;
   final ISaveCharacterUseCase _saveCharacterUseCase;
-  final IDeleteCharacterUseCase _deleteCharacterUseCase;
-  final IUpdateCharacterUseCase _updateCharacterUseCase;
+  final IDeleteCharacterUseCase _deleteCharacterUseCase; //adicionei essa linha
+  final IUpdateCharacterUseCase _updateCharacterUseCase; // e essa tb
 
   CharacterFacadeUseCasesImpl({
     required IGetAllCharactersUseCase getAllCharactersUseCase,
@@ -21,8 +21,8 @@ final class CharacterFacadeUseCasesImpl implements ICharacterFacadeUseCases {
   }) : _getAllCharactersUseCase = getAllCharactersUseCase,
        _getCharacterByIdUseCase = getCharacterByIdUseCase,
        _saveCharacterUseCase = saveCharacterUseCase,
-       _deleteCharacterUseCase = deleteCharacterUseCase,
-       _updateCharacterUseCase = updateCharacterUseCase;
+       _deleteCharacterUseCase = deleteCharacterUseCase, // e aqui
+       _updateCharacterUseCase = updateCharacterUseCase; // e aqui
 
   @override
   Future<ListCharacterResult> getAllCharacters(NoParams params) {
@@ -35,7 +35,7 @@ final class CharacterFacadeUseCasesImpl implements ICharacterFacadeUseCases {
   }
 
   @override
-  Future<CharacterResult> updateCharacter(CharacterParams params) {
+  Future<CharacterResult> updateCharacter(CharacterParams params) { //adicionei essa função tb
     return _updateCharacterUseCase(params);
   }
 
@@ -45,7 +45,7 @@ final class CharacterFacadeUseCasesImpl implements ICharacterFacadeUseCases {
   }
 
   @override
-  Future<CharacterResult> deleteCharacter(CharacterIdParams params) {
+  Future<CharacterResult> deleteCharacter(CharacterIdParams params) { // e essa aqui
     return _deleteCharacterUseCase(params);
   }
 }
